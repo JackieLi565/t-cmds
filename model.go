@@ -8,6 +8,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var borderStyle = lipgloss.NewStyle().
+        Border(lipgloss.RoundedBorder()).
+        BorderForeground(lipgloss.Color("#FFFFFF")).
+        PaddingTop(1).
+        PaddingLeft(2).
+        PaddingRight(2).
+        PaddingBottom(1)
 
 type Model struct {
 	list list.Model
@@ -43,14 +50,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {
-				case key.Matches(msg, Keys.Quit):
+				case key.Matches(msg, ModelKeys.Quit):
 					return m, tea.Quit
-				case key.Matches(msg, Keys.Help):
+				case key.Matches(msg, ModelKeys.Help):
 					m.help.ShowAll = !m.help.ShowAll
+				case key.Matches(msg, ModelKeys.NewCmd):
+					return NewForm().Update(nil)
 				}
 
 		case tea.WindowSizeMsg:
 			m.list.SetSize(msg.Width - 2, msg.Height - 10)
+
+		case Form:
+			
 	}
 
 	var cmd tea.Cmd
@@ -59,5 +71,5 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(Keys))
+	return borderStyle.Render(lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(ModelKeys)))
 }

@@ -4,20 +4,21 @@ import (
 	"encoding/json"
 	"os"
 	"strings"
+	"unicode"
 )
 
 const CMD_FILE = "commands.json"
 
 type CmdJSON struct {
-	Name string `json:"name"`
-	Cmd string `json:"cmd"`
-	Args []string `json:"args"`
+	Name 		string `json:"name"`
+	Cmd 		string `json:"cmd"`
+	Args 		[]string `json:"args"`
 }
 
 type CmdItem struct {
-	Name      string
-	Cmd   string
-	Args []string
+	Name    string
+	Cmd   	string
+	Args 		[]string
 }
 
 func NewCmd(name string, cmd string, args []string) CmdItem {
@@ -48,6 +49,7 @@ func GetCommands() []CmdItem {
 	return cmds
 }
 
+
 func (c CmdItem) Title() string {
 	return c.Name
 }
@@ -77,7 +79,33 @@ func CmdWithArgs(cmd string, args []string) string {
 	return str.String()
 }
 
-// TODO parse a string of arguments into a slice
 func ParseArgs(args string) []string {
-	return make([]string, 0)
+	var parsedArgs []string
+	var arg strings.Builder
+	var insideQuote bool
+
+	for _, char := range args {
+		if unicode.Is(unicode.Quotation_Mark, char) {
+			insideQuote = !insideQuote
+			arg.WriteRune(char)
+			continue
+		}
+
+		if insideQuote {
+			arg.WriteRune(char)
+		} else {
+			if unicode.Is(unicode.Space, char) && arg.Len() > 0 {
+				parsedArgs = append(parsedArgs, arg.String())
+				arg.Reset()
+			} else {
+				arg.WriteRune(char)
+			}
+		}
+	}
+
+	if arg.Len() > 0 {
+		parsedArgs = append(parsedArgs, arg.String())
+	}
+
+	return parsedArgs
 } 
