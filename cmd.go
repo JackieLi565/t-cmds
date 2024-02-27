@@ -43,7 +43,7 @@ func GetCommands() []CmdItem {
 
 	cmds := make([]CmdItem, 0, len(jsonCmds))
 	for _, cmd := range jsonCmds {
-		cmds = append(cmds, NewCmd(cmd.Name, cmd.Name, cmd.Args))
+		cmds = append(cmds, NewCmd(cmd.Name, cmd.Cmd, cmd.Args))
 	}
 
 	return cmds
