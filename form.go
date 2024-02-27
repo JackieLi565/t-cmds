@@ -38,12 +38,12 @@ func NewForm() Form {
 
 	cmd := textinput.New()
 	cmd.Placeholder = "ls or pwd"
-	cmd.CharLimit = 50 // if you have a command longer then this please show me
+	cmd.CharLimit = 50
 	cmd.Width = 20
 	
 	args := textinput.New()
 	args.Placeholder = "-l | wc -l"
-	args.CharLimit = 250 // if you have a command longer then this please show me
+	args.CharLimit = 250
 	args.Width = 40
 
 	inputs[name] = nameInput
@@ -69,7 +69,7 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 		case tea.KeyMsg:
-			switch {
+			switch {					
 				case key.Matches(msg, FormKeys.Enter):
 					return MainModel.Update(f)
 				case key.Matches(msg, FormKeys.Cancel):
@@ -78,6 +78,8 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					f.prevInput()
 				case key.Matches(msg, FormKeys.Down):
 					f.nextInput()
+				case key.Matches(msg, FormKeys.Help):
+					f.help.ShowAll = !f.help.ShowAll
 			}
 
 			for i := range f.inputs {

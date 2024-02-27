@@ -34,7 +34,7 @@ func TestParseArgs(t *testing.T) {
 			{"abc", "def ghi"},
 	}
 	for i, testCase := range testCases {
-		result := ParseArgs(testCase)
+		result := parseArgs(testCase)
 
 		if len(expected[i]) != len(result) {
 			t.Error(result)

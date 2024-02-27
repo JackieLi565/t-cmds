@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"unicode"
+
+	"github.com/charmbracelet/bubbles/list"
 )
 
 const CMD_FILE = "commands.json"
@@ -29,7 +32,7 @@ func NewCmd(name string, cmd string, args []string) CmdItem {
 	}
 }
 
-func GetCommands() []CmdItem {
+func getCommands() []CmdItem {
 	jsonCmds := make([]CmdJSON, 0)
 
 	dat, err := os.ReadFile(CMD_FILE)
@@ -49,20 +52,19 @@ func GetCommands() []CmdItem {
 	return cmds
 }
 
-
 func (c CmdItem) Title() string {
 	return c.Name
 }
 
 func (c CmdItem) Description() string {
-	return CmdWithArgs(c.Cmd, c.Args)
+	return cmdWithArgs(c.Cmd, c.Args)
 }
 
 func (c CmdItem) FilterValue() string {
 	return c.Name
 }
 
-func CmdWithArgs(cmd string, args []string) string {
+func cmdWithArgs(cmd string, args []string) string {
 	var str strings.Builder
 	
 	str.WriteString(cmd)
@@ -79,7 +81,34 @@ func CmdWithArgs(cmd string, args []string) string {
 	return str.String()
 }
 
-func ParseArgs(args string) []string {
+func saveToDisk(items []list.Item) error {
+	jsonItems := make([]CmdJSON, 0, len(items))
+
+	for _, item := range items {
+		if c, ok := item.(CmdItem); ok {
+			jsonItems = append(jsonItems, CmdJSON{
+				Name: c.Name,
+				Cmd: c.Cmd,
+				Args: c.Args,
+			})
+		} else {
+			return errors.New("foreign type within cmd list")
+		}
+	}
+
+	jsonStr, err := json.Marshal(jsonItems)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(CMD_FILE, jsonStr, 6044); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func parseArgs(args string) []string {
 	var parsedArgs []string
 	var arg strings.Builder
 	var insideQuote bool
