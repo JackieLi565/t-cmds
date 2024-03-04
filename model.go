@@ -10,19 +10,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var borderStyle = lipgloss.NewStyle().
-        Border(lipgloss.RoundedBorder()).
-        BorderForeground(lipgloss.Color("#FFFFFF")).
-        PaddingTop(1).
-        PaddingLeft(2).
-        PaddingRight(2).
-        PaddingBottom(1)
-
 type Model struct {
 	list list.Model
 	help help.Model
 	selected list.Item
 	modified bool
+	copy bool
 }
 
 func NewModel() *Model {
@@ -64,13 +57,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case key.Matches(msg, ModelKeys.NewCmd):
 					return NewForm().Update(nil)
 				case key.Matches(msg, ModelKeys.Enter):
-					if m.modified {
-						saveToDisk(m.list.Items())
+					selectedItem := m.list.SelectedItem()
+					switch item := selectedItem.(type) {
+					case CmdItem:
+						return NewOutput(item).Update(nil)
 					}
-					m.selected = m.list.SelectedItem()
-					return m, tea.Quit
 				case key.Matches(msg, ModelKeys.Delete):
 					m.list.RemoveItem(m.list.Index())
+				case key.Matches(msg, ModelKeys.CopyCmd):
+					m.selected = m.list.SelectedItem()
+					m.copy = true
 				}
 
 		case tea.WindowSizeMsg:
@@ -95,6 +91,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
+	if m.copy {
+		copyMsg := notificationStyle.Render("Command copied to clipboard!")
+		m.copy = false
+		return borderStyle.Render(lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(ModelKeys), copyMsg))
+	}
+
 	return borderStyle.Render(lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(ModelKeys)))
 }
 

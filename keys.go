@@ -4,6 +4,7 @@ import "github.com/charmbracelet/bubbles/key"
 
 type ModelKey struct {
 	NewCmd    	key.Binding
+	CopyCmd			key.Binding
 	Delete 			key.Binding
 	Up     			key.Binding
 	Down   			key.Binding
@@ -21,7 +22,7 @@ func (k ModelKey) ShortHelp() []key.Binding {
 func (k ModelKey) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.Left, k.Right}, 
-		{k.NewCmd, k.Delete},
+		{k.NewCmd, k.CopyCmd, k.Delete},
 		{k.Help, k.Quit},                
 	}
 }
@@ -80,6 +81,10 @@ var ModelKeys = ModelKey{
 	Up: key.NewBinding(
 		key.WithKeys("up", "k"),
 		key.WithHelp("↑/k", "up"),
+	),
+	CopyCmd: key.NewBinding(
+		key.WithKeys("c"),
+		key.WithHelp("c", "copy cmd"),
 	),
 	Down: key.NewBinding(
 		key.WithKeys("down", "j"),
