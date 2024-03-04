@@ -2,18 +2,21 @@ package main
 
 import (
 	"os/exec"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type result []byte
 
 func executeCmd(c CmdItem) tea.Cmd {
-	return func () tea.Msg {
+	return func() tea.Msg {
+		time.Sleep(time.Second * 3)
 		args := append([]string{"-c", c.Cmd}, c.Args...)
 		cmd := exec.Command("bash", args...)
-	
+
 		output, err := cmd.Output()
 		if err != nil {
 			return err
@@ -23,24 +26,26 @@ func executeCmd(c CmdItem) tea.Cmd {
 }
 
 func NewOutput(item CmdItem) Output {
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(blue)).MarginRight(1)
+
 	return Output{
-		cmd: item,
-		spinner: spinner.New(),
+		cmd:     item,
+		spinner: s,
 	}
 }
 
 type Output struct {
-	cmd CmdItem
+	cmd     CmdItem
 	spinner spinner.Model
-	output []byte
-	done bool
+	err     error
+	output  []byte
+	done    bool
 }
 
 func (o Output) Init() tea.Cmd {
-	return tea.Batch(
-		o.spinner.Tick,
-		executeCmd(o.cmd),
-	)
+	return nil
 }
 
 func (o Output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -54,15 +59,31 @@ func (o Output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		o.spinner, cmd = o.spinner.Update(msg)
 		return o, cmd
+	case error:
+		o.err = msg
+	case initOutput:
+		return o, tea.Batch(
+			o.spinner.Tick,
+			executeCmd(o.cmd),
+		)
 	}
 
-	return o, o.Init()
+	return o, nil
 }
 
 func (o Output) View() string {
-	if o.done {
-		return borderStyle.Render(string(o.output))
+	if o.err != nil {
+		errMsg := notification(lipgloss.Color(red)).Render("Failed to execute command!")
+		copyMsg := notification(lipgloss.Color(green)).Render("Command copied to clipboard!")
+
+		return lipgloss.JoinVertical(lipgloss.Center, errMsg, copyMsg)
 	}
 
-	return o.spinner.View()
+	if o.done {
+		resTitle := title.MarginBottom(1).Render("Output Result")
+		return border(lipgloss.Color(white)).Render(lipgloss.JoinVertical(lipgloss.Left, resTitle, string(o.output)))
+	}
+
+	msg := lipgloss.NewStyle().Foreground(lipgloss.Color(white)).Render("Executing command")
+	return border(lipgloss.Color(white)).Render(lipgloss.JoinHorizontal(lipgloss.Center, o.spinner.View(), msg))
 }
