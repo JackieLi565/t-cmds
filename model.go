@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -77,6 +78,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, ModelKeys.CopyCmd):
 			selectedItem := m.list.SelectedItem()
+			if selectedItem == nil { 
+				m.err = errors.New("empty list") 
+				return m, nil
+			}
+
 			m.selected = selectedItem
 			m.copy = true
 			switch c := selectedItem.(type) {
@@ -110,19 +116,23 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
+	var (
+		position = lipgloss.Left
+		main = border.MarginBottom(1).Width(60)
+		help =  m.help.View(ModelKeys)
+	)
+
 	if m.err != nil {
-		errMsg := notification(lipgloss.Color(red)).Render("Failed to copy to clipboard!")
 		m.err = nil
-		return border(lipgloss.Color(white)).Render(lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(ModelKeys), errMsg))
+		return lipgloss.JoinVertical(position, main.BorderForeground(lipgloss.Color(red)).Render(m.list.View()), help)
 	}
 
 	if m.copy {
-		copyMsg := notification(lipgloss.Color(green)).Render("Command copied to clipboard!")
 		m.copy = false
-		return border(lipgloss.Color(white)).Render(lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(ModelKeys), copyMsg))
+		return lipgloss.JoinVertical(position, main.BorderForeground(lipgloss.Color(green)).Render(m.list.View()), help)
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, border(lipgloss.Color(white)).MarginBottom(1).Render(m.list.View()), m.help.View(ModelKeys))
+	return lipgloss.JoinVertical(position, main.BorderForeground(lipgloss.Color(white)).Render(m.list.View()), help)
 }
 
 func isEmpty(s string) bool {

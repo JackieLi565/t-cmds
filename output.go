@@ -2,8 +2,8 @@ package main
 
 import (
 	"os/exec"
-	"time"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -13,7 +13,6 @@ type result []byte
 
 func executeCmd(c CmdItem) tea.Cmd {
 	return func() tea.Msg {
-		time.Sleep(time.Second * 3)
 		args := append([]string{"-c", c.Cmd}, c.Args...)
 		cmd := exec.Command("bash", args...)
 
@@ -30,9 +29,13 @@ func NewOutput(item CmdItem) Output {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(blue)).MarginRight(1)
 
+	help := help.New()
+	help.ShowAll = false
+
 	return Output{
 		cmd:     item,
 		spinner: s,
+		help: 	 help,
 	}
 }
 
@@ -42,6 +45,7 @@ type Output struct {
 	err     error
 	output  []byte
 	done    bool
+	help		help.Model
 }
 
 func (o Output) Init() tea.Cmd {
@@ -51,7 +55,11 @@ func (o Output) Init() tea.Cmd {
 func (o Output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		return o, tea.Quit
+		if o.done {
+			return MainModel.Update(nil)
+		} else if o.err != nil {
+			return o, tea.Quit
+		}
 	case result:
 		o.done = true
 		o.output = msg
@@ -72,18 +80,24 @@ func (o Output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (o Output) View() string {
-	if o.err != nil {
-		errMsg := notification(lipgloss.Color(red)).Render("Failed to execute command!")
-		copyMsg := notification(lipgloss.Color(green)).Render("Command copied to clipboard!")
+	b := border.BorderForeground(lipgloss.Color(white)).Width(60)
+	textWhite := lipgloss.NewStyle().Foreground(lipgloss.Color(white))
+	textGreen := lipgloss.NewStyle().Foreground(lipgloss.Color(green)).MarginTop(1)
 
-		return lipgloss.JoinVertical(lipgloss.Center, errMsg, copyMsg)
+	if o.err != nil {
+		errMsg := textWhite.Render("Failed to execute command!")
+		copyMsg := textGreen.Render("Command copied to clipboard!")
+
+		return b.Align(lipgloss.Center).Render(lipgloss.JoinVertical(lipgloss.Center, errMsg, copyMsg))
 	}
 
 	if o.done {
+		msg := textWhite.Render("Press any key to return")
 		resTitle := title.MarginBottom(1).Render("Output Result")
-		return border(lipgloss.Color(white)).Render(lipgloss.JoinVertical(lipgloss.Left, resTitle, string(o.output)))
+		return b.Render(lipgloss.JoinVertical(lipgloss.Left, resTitle, string(o.output), msg))
 	}
 
-	msg := lipgloss.NewStyle().Foreground(lipgloss.Color(white)).Render("Executing command")
-	return border(lipgloss.Color(white)).Render(lipgloss.JoinHorizontal(lipgloss.Center, o.spinner.View(), msg))
+	msg := textWhite.Render("Executing command, press q to quit")
+	outView := lipgloss.JoinHorizontal(lipgloss.Center, o.spinner.View(), msg)
+	return b.Render(outView)
 }

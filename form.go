@@ -31,20 +31,20 @@ func NewForm() Form {
 	inputs := make([]textinput.Model, 3)
 
 	nameInput := textinput.New()
-	nameInput.Placeholder = "Make A NextJS Project"
-	nameInput.CharLimit = 300 // if you have a command longer then this please show me
-	nameInput.Width = 30
+	nameInput.Placeholder = "Word count of file list"
+	nameInput.CharLimit = 300
+	nameInput.Width = 10
 	nameInput.Focus()
 
 	cmd := textinput.New()
 	cmd.Placeholder = "ls or pwd"
 	cmd.CharLimit = 50
-	cmd.Width = 20
+	cmd.Width = 10
 
 	args := textinput.New()
 	args.Placeholder = "-l | wc -l"
 	args.CharLimit = 250
-	args.Width = 40
+	args.Width = 10
 
 	inputs[name] = nameInput
 	inputs[command] = cmd
@@ -71,15 +71,12 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, FormKeys.Enter):
-			return MainModel.Update(f)
+			if f.focused == len(f.inputs) - 1 {
+				return MainModel.Update(f)
+			}
+			f.nextInput()
 		case key.Matches(msg, FormKeys.Cancel):
 			return MainModel.Update(nil)
-		case key.Matches(msg, FormKeys.Up):
-			f.prevInput()
-		case key.Matches(msg, FormKeys.Down):
-			f.nextInput()
-		case key.Matches(msg, FormKeys.Help):
-			f.help.ShowAll = !f.help.ShowAll
 		}
 
 		for i := range f.inputs {
@@ -109,7 +106,7 @@ func (f Form) View() string {
  %s %s
 
  %s
-		`, formTitle, inputStyle.Width(30).Render("Command Name"),
+		`, formTitle, inputStyle.Width(20).Render("Command Name"),
 		f.inputs[name].View(),
 		inputStyle.Width(10).Render("Command"),
 		f.inputs[command].View(),
@@ -118,16 +115,11 @@ func (f Form) View() string {
 		continueStyle.Render("Press Enter to Submit"),
 	)
 
-	return border(lipgloss.Color(white)).Render(lipgloss.JoinVertical(lipgloss.Left, form, f.help.View(FormKeys)))
+	b := border.BorderForeground(lipgloss.Color(white)).Width(60)
+
+	return b.Render(lipgloss.JoinVertical(lipgloss.Left, form, f.help.View(FormKeys)))
 }
 
 func (m *Form) nextInput() {
 	m.focused = (m.focused + 1) % len(m.inputs)
-}
-
-func (m *Form) prevInput() {
-	m.focused--
-	if m.focused < 0 {
-		m.focused = len(m.inputs) - 1
-	}
 }

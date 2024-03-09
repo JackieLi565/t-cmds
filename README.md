@@ -8,8 +8,7 @@ Wanted to get familiar with [Bubbletea](https://github.com/charmbracelet/bubblet
 - Persist cmds
 - Add cmds
 - Delete cmds
+- Copy cmd to clipboard
 - Terminal UI looks cool.
 
-## Sample
-
-_Insert image here when I finished_
+<img src="./demo.gif">
